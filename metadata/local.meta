@@ -1,0 +1,17 @@
+[app/ui]
+version = 6.6.1
+modtime = 1501185656.585238000
+
+[app/launcher]
+version = 6.6.1
+modtime = 1501185656.590396000
+
+[indexes/s4gproj]
+owner = admin
+version = 6.6.1
+modtime = 1501276701.057523000
+
+[views/energy_consumption]
+owner = admin
+version = 6.6.1
+modtime = 1501713263.467766000
