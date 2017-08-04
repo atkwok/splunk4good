@@ -27,13 +27,15 @@
   </row>
   <row>
     <panel>
-      <title>Seattle Energy Consumption: Predicted v. Actual</title>
+      <title>Seattle Energy Consumption: Predicted v. Actual (saved model)</title>
       <chart>
-        <title></title>
         <search>
-          <query>(index="s4gproj" source="seattleenergyusage.json") OR (index="s4gproj" sourcetype="weatherdata") OR (index="s4gproj" source="seattleforecastdata.json") | transaction host maxspan=500s 
-|  search eventcount=4 
-| fit DecisionTreeRegressor max_depth=100 "megawatthours" from "date.hour" "date.mon" "date_wday" "hum" "rain" "tempi" "tempm" "windchilli" "windchillm" | where megawatthours&lt;3000 | sort _time | table _time megawatthours "predicted(megawatthours)"</query>
+          <query>(index="s4gproj" source="seattleenergyusage.json" ) OR (index="s4gproj" sourcetype="weatherdata" tempi&gt;0)  
+| bin span=1h _time 
+| eval _time=if(sourcetype="weatherdata", _time+60*60, _time) 
+| stats first(*) by _time 
+| rename first(*) as *
+| apply FinalEnergyPredictor as prediction | timechart span=1h avg(megawatthours) avg(prediction)</query>
           <earliest>0</earliest>
           <latest></latest>
         </search>
@@ -44,7 +46,29 @@
   </row>
   <row>
     <panel>
-      <title>Proof of Concept: Prediction v. Actual for July 29 - August 3, 2017</title>
+      <title>Seattle Energy Consumption: Predicted v. Actual (new model)</title>
+      <chart>
+        <title></title>
+        <search>
+          <query>(index="s4gproj" source="seattleenergyusage.json") OR (index="s4gproj" sourcetype="weatherdata" tempi&gt;0) OR (index="s4gproj" source="seattleforecastdata.json") 
+| bin span=1h _time 
+| eval _time=if(sourcetype="weatherdata", _time+60*60, _time) 
+| stats first(*) by _time 
+| rename first(*) as *
+| where (isnotnull(megawatthours))
+| fit DecisionTreeRegressor "megawatthours" from "date.hour" "date_month" "date_wday" "hum" "rain" "tempi" "tempm" "windchilli" "windchillm" "dewpti" 
+| timechart span=1h avg(megawatthours) avg("predicted(megawatthours)")</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Proof of Concept: Prediction v. Actual for July 29 - August 3, 2017 (unknown consumption)</title>
       <chart>
         <title></title>
         <search>
@@ -58,6 +82,23 @@
           <latest>now</latest>
         </search>
         <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Seattle Energy Consumption Forecast</title>
+      <chart>
+        <title></title>
+        <search>
+          <query>source="SeattleForecastHourly.json" host="akwok-mbp15" index="s4gproj" sourcetype="weatherforecast" |
+eval _time=_time+7*60*60
+| rename date_hour AS "date.hour", humidity AS "hum", "temp.english" AS "tempi", "temp.metric" AS "tempm", "windchill.english" AS "windchilli", "windchill.metric" AS "windchillm", "dewpoint.english" AS "dewpti" | eval rain=0 | apply FinalEnergyPredictor as prediction | timechart span=1hr avg(prediction)</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
         <option name="charting.drilldown">none</option>
       </chart>
     </panel>
