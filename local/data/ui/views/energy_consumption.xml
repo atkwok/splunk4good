@@ -1,14 +1,41 @@
 <dashboard>
-  <label>Energy Consumption</label>
+  <label>Seattle Energy Consumption Forecast</label>
   <row>
     <panel>
-      <title>Hourly Energy Consumption - Seattle City Light</title>
+      <title>Temperature v. Energy Consumption</title>
       <chart>
         <title></title>
         <search>
-          <query>(index="s4gproj" source="seattleenergyusage.json") | sort _time | table _time megawatthours</query>
+          <query>(index="s4gproj" source="seattleenergyusage.json") OR (index="s4gproj" sourcetype="weatherdata") OR (index="s4gproj" source="seattleforecastdata.json") | transaction host maxspan=500s | where tempi&gt;-100 | sort _time | table _time, tempi, megawatthours</query>
           <earliest>0</earliest>
-          <latest>1498892400</latest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisY.maximumNumber">100</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.maximumNumber">2000</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.overlayFields">megawatthours</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Seattle Energy Consumption: Predicted v. Actual</title>
+      <chart>
+        <title></title>
+        <search>
+          <query>(index="s4gproj" source="seattleenergyusage.json") OR (index="s4gproj" sourcetype="weatherdata") OR (index="s4gproj" source="seattleforecastdata.json") | transaction host maxspan=500s 
+|  search eventcount=4 
+| fit DecisionTreeRegressor max_depth=100 "megawatthours" from "date.hour" "date.mon" "date_wday" "hum" "rain" "tempi" "tempm" "windchilli" "windchillm" | where megawatthours&lt;3000 | sort _time | table _time megawatthours "predicted(megawatthours)"</query>
+          <earliest>0</earliest>
+          <latest></latest>
         </search>
         <option name="charting.chart">line</option>
         <option name="charting.drilldown">none</option>
@@ -17,22 +44,21 @@
   </row>
   <row>
     <panel>
-      <title>Hourly Temperature - Seattle</title>
+      <title>Proof of Concept: Prediction v. Actual for July 29 - August 3, 2017</title>
       <chart>
+        <title></title>
         <search>
-          <query>index="s4gproj" sourcetype=weatherdata | where (tempi&lt;150 AND tempi&gt;-150) AND pressurei&gt;0 | sort _time | table _time tempi</query>
-          <earliest>0</earliest>
-          <latest>1498892400</latest>
+          <query>(index="s4gproj" source="new_watts" ) OR (index="s4gproj" source="seattleweatherdata7.txt"  tempi&gt;0)  
+| bin span=1h _time 
+| eval _time=if(sourcetype="weatherdata", _time+60*60, _time) 
+| stats first(*) by _time 
+| rename first(*) as *
+| apply FinalEnergyPredictor as prediction | timechart span=1h avg(megawatthours) avg(prediction)</query>
+          <earliest>1501398000</earliest>
+          <latest>now</latest>
         </search>
-        <option name="charting.axisTitleX.visibility">visible</option>
-        <option name="charting.axisTitleY.visibility">visible</option>
-        <option name="charting.axisTitleY2.visibility">visible</option>
         <option name="charting.chart">line</option>
-        <option name="charting.chart.nullValueMode">connect</option>
         <option name="charting.drilldown">none</option>
-        <option name="charting.layout.splitSeries">0</option>
-        <option name="charting.layout.splitSeries.allowIndependentYRanges">1</option>
-        <option name="charting.legend.placement">right</option>
       </chart>
     </panel>
   </row>
