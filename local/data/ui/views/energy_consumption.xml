@@ -88,6 +88,27 @@
   </row>
   <row>
     <panel>
+      <title>Seattle Energy Forecast: Percentage Error</title>
+      <chart>
+        <search>
+          <query>(index="s4gproj" source="new_watts" ) OR (index="s4gproj" source="seattleweatherdata7.txt"  tempi&gt;0)  
+| bin span=1h _time 
+| eval _time=if(sourcetype="weatherdata", _time+60*60, _time) 
+| stats first(*) by _time 
+| rename first(*) as *
+| apply FinalEnergyPredictor as prediction 
+| eval percent_difference=abs(megawatthours - prediction)/megawatthours*100
+| timechart span=1h avg(percent_difference)</query>
+          <earliest>1501398000</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
       <title>Seattle Energy Consumption Forecast</title>
       <chart>
         <title></title>
